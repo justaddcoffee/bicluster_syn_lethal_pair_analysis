@@ -22,6 +22,8 @@ x_coordinate_to_ncbi = {}
 bicluster_to_ncbi = {}
 ncbi_to_bicluster = {}
 
+bicluster_ids_to_sl_pairs = {}
+
 # read in syn lethal gene pairs
 with open(syn_lethal_file) as csv_file:
     reader = csv.DictReader(filter(lambda row: row[0] != '#', csv_file))
@@ -58,7 +60,6 @@ with open(bicluster_file) as bc_file:
                 ncbi_to_bicluster[ncbi_id] = []
             ncbi_to_bicluster[ncbi_id].append(row['#number'])
 
-edges = []
 G = nx.Graph()
 
 # make edges
@@ -66,11 +67,13 @@ for dict_entry in sl_pairs:
     if dict_entry['SL'] == '0':
         continue
     try:
-        gene1_biclusters = ncbi_to_bicluster["NCBI:" + sym_to_ncbi[dict_entry['gene1']]]
+        gene1 = "NCBI:" + sym_to_ncbi[dict_entry['gene1']]
+        gene1_biclusters = ncbi_to_bicluster[gene1]
     except KeyError as ke:
         print("problem getting gene 1 biclusters: " + str(ke))
     try:
-        gene2_biclusters = ncbi_to_bicluster["NCBI:" + sym_to_ncbi[dict_entry['gene2']]]
+        gene2 = "NCBI:" + sym_to_ncbi[dict_entry['gene2']]
+        gene2_biclusters = ncbi_to_bicluster[gene2]
     except KeyError as ke:
         print("problem getting gene 2 biclusters: " + str(ke))
     for b1 in gene1_biclusters:
@@ -83,8 +86,18 @@ for dict_entry in sl_pairs:
             else:
                 # new edge. add with weight=1
                 G.add_edge(b1, b2, weight=1)
-            # G.add_edge(b1, b2)
-            edges.append([b1, b2])
+
+            if b1 not in bicluster_ids_to_sl_pairs:
+                bicluster_ids_to_sl_pairs[b1] = {}
+            if b2 not in bicluster_ids_to_sl_pairs[b1]:
+                bicluster_ids_to_sl_pairs[b1][b2] = {}
+                bicluster_ids_to_sl_pairs[b1][b2]['ncbi_ids'] = []
+                bicluster_ids_to_sl_pairs[b1][b2]['sym'] = []
+
+            bicluster_ids_to_sl_pairs[b1][b2]['ncbi_ids'].append([gene1, gene2])
+            bicluster_ids_to_sl_pairs[b1][b2]['sym'].append([dict_entry['gene1'],
+                                                             dict_entry['gene2']])
+
 
 plt.subplot(121)
 nx.draw(G, with_labels=False)
@@ -107,3 +120,8 @@ self_conn_nodes = sorted(
 w = csv.writer(open("self_connected_nodes.csv", "w"))
 for node in self_conn_nodes:
     w.writerow(node)
+
+bc1609 = bicluster_ids_to_sl_pairs['1609']['1609']
+w = csv.writer(open("bc1609.csv", "w"))
+for key, val in bc1609.items():
+    w.writerow([key, val])
