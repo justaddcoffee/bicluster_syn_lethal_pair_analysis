@@ -1,7 +1,6 @@
 import csv
 import networkx as nx
 import matplotlib.pyplot as plt
-from operator import itemgetter
 
 """
 Given a set of Marcin's biclusters, map known and clinically validated syn lethal
@@ -38,6 +37,10 @@ with open(ncbi_to_symbol_file) as ns_file:
     for row in reader:
         sym_to_ncbi[row[2]] = row[1]
         ncbi_to_sym[row[1]] = row[2]
+
+w = csv.writer(open("sym_to_ncbi_id.csv", "w"))
+for key, val in sym_to_ncbi.items():
+    w.writerow([key, "NCBI:" + val])
 
 # make of x coordinate to ncbi gene
 with open(x_coordinate_to_ncbi_file) as cn_file:
